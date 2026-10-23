@@ -316,9 +316,18 @@ let selectedCustomType = "Colecionável / Action Figure 3D";
 let uploadedImageFile = null;
 let uploadedImageDataUrl = null;
 
-// Helper: Build WhatsApp URL
+// Helper: Sanitize text for WhatsApp URL (removes surrogate-pair emojis that turn into  on WhatsApp Web/Desktop redirect)
+function sanitizeForWhatsApp(str) {
+  return String(str || "")
+    .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, "")
+    .replace(/[\u2600-\u27BF\uFE0F]/g, "")
+    .replace(/  +/g, " ")
+    .trim();
+}
+
+// Helper: Build WhatsApp URL using api.whatsapp.com/send to avoid wa.me 302 encoding corruption
 function buildWhatsAppUrl(message) {
-  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+  return `https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${encodeURIComponent(message)}`;
 }
 
 // Helper: Show Toast
@@ -431,12 +440,13 @@ function renderCatalog() {
 
 // Direct 1-click WhatsApp order for a specific product
 window.quickOrderProduct = function (title, shortcode) {
+  const cleanTitle = sanitizeForWhatsApp(title);
   const igUrl = shortcode ? `https://www.instagram.com/p/${shortcode}/` : "https://www.instagram.com/maniaarteem3d/";
   const msg =
-    `Olá, *Mania Arte em 3D*! 👋🚀\n\n` +
+    `Olá, *Mania Arte em 3D*!\n\n` +
     `Vim pelo site e quero encomendar este produto do catálogo:\n` +
-    `✨ *Produto:* ${title}\n` +
-    `📷 *Referência no Instagram:* ${igUrl}\n\n` +
+    `• *Produto:* ${cleanTitle}\n` +
+    `• *Referência no Instagram:* ${igUrl}\n\n` +
     `Pode me passar os detalhes de valor, cores disponíveis e prazo?`;
 
   window.open(buildWhatsAppUrl(msg), "_blank", "noopener,noreferrer");
@@ -683,26 +693,26 @@ function setupCustomOrderBuilder() {
         copiedToClipboard = await tryCopyImageToClipboard();
       }
 
-      let msg = `Olá, *Mania Arte em 3D*! 👋🎨\n`;
+      let msg = `Olá, *Mania Arte em 3D*!\n`;
       msg += `Vim pelo site e quero fazer um *Pedido Personalizado / Sob Encomenda*:\n\n`;
-      if (clientName) msg += `👤 *Cliente:* ${clientName}\n`;
-      msg += `🏷️ *Categoria:* ${selectedCustomType}\n`;
-      msg += `✨ *O que desejo:* ${title}\n`;
-      if (details) msg += `📝 *Detalhes / Cores / Tamanho:* ${details}\n`;
-      if (refLink) msg += `🔗 *Link de Referência:* ${refLink}\n`;
+      if (clientName) msg += `• *Cliente:* ${sanitizeForWhatsApp(clientName)}\n`;
+      msg += `• *Categoria:* ${sanitizeForWhatsApp(selectedCustomType)}\n`;
+      msg += `• *O que desejo:* ${sanitizeForWhatsApp(title)}\n`;
+      if (details) msg += `• *Detalhes / Cores / Tamanho:* ${sanitizeForWhatsApp(details)}\n`;
+      if (refLink) msg += `• *Link de Referência:* ${refLink}\n`;
 
       if (uploadedImageFile) {
-        msg += `📸 *Imagem de Referência:* Selecionei a imagem *"${uploadedImageFile.name}"* no site e vou enviar aqui na conversa agora mesmo!\n`;
+        msg += `• *Imagem de Referência:* Selecionei a imagem *"${uploadedImageFile.name}"* no site e vou enviar aqui na conversa agora mesmo!\n`;
       }
 
       if (orderList.length > 0) {
-        msg += `\n📦 *Também selecionei do catálogo:*\n`;
+        msg += `\n*Também selecionei do catálogo:*\n`;
         orderList.forEach(item => {
-          msg += `• ${item.qty}x ${item.title}\n`;
+          msg += `• ${item.qty}x ${sanitizeForWhatsApp(item.title)}\n`;
         });
       }
 
-      msg += `\nPodem avaliar e me passar o orçamento? 🚀`;
+      msg += `\nPodem avaliar e me passar o orçamento?`;
 
       if (copiedToClipboard) {
         showToast("📸 Sua imagem foi copiada! Basta colar (Ctrl+V) na conversa do WhatsApp.");
@@ -805,14 +815,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     const notes = document.getElementById("drawerNotesInput")?.value.trim();
-    let msg = `Olá, *Mania Arte em 3D*! 👋🚀\n\n`;
+    let msg = `Olá, *Mania Arte em 3D*!\n\n`;
     msg += `Montei minha *Lista de Encomenda* no site com os seguintes produtos:\n\n`;
     orderList.forEach(item => {
-      msg += `✅ *${item.qty}x ${item.title}* (${item.universe})\n`;
-      msg += `   Ref: https://www.instagram.com/p/${item.shortcode}/\n`;
+      msg += `• *${item.qty}x ${sanitizeForWhatsApp(item.title)}* (${sanitizeForWhatsApp(item.universe)})\n`;
+      msg += `  Ref: https://www.instagram.com/p/${item.shortcode}/\n`;
     });
     if (notes) {
-      msg += `\n📝 *Observações / Preferência de cores:* ${notes}\n`;
+      msg += `\n• *Observações / Preferência de cores:* ${sanitizeForWhatsApp(notes)}\n`;
     }
     msg += `\nPodem me informar o valor total e prazo de produção?`;
 
