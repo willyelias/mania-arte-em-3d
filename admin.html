@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Painel Administrativo | Mania Arte em 3D</title>
+  <link rel="icon" type="image/jpeg" href="assets/logo-perfil.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    .login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .login-card {
+      background: var(--bg-card);
+      border: 1.5px solid var(--border-cyan);
+      border-radius: var(--radius-lg);
+      padding: 36px 30px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: var(--shadow-card), var(--shadow-cyan);
+      text-align: center;
+    }
+    .login-logo {
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      padding: 3px;
+      background: var(--grad-brand);
+      margin: 0 auto 16px;
+    }
+    .login-logo img {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid var(--bg-card);
+    }
+    .admin-dashboard {
+      display: none;
+      min-height: 100vh;
+      padding-bottom: 80px;
+    }
+    .admin-dashboard.unlocked {
+      display: block;
+    }
+    .admin-topbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7, 8, 14, 0.92);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-cyan);
+      padding: 14px 0;
+    }
+    .admin-topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .admin-nav-tabs {
+      display: flex;
+      gap: 8px;
+      margin: 24px 0;
+      flex-wrap: wrap;
+    }
+    .admin-tab {
+      padding: 11px 18px;
+      border-radius: var(--radius-full);
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      font-weight: 700;
+      font-size: 0.88rem;
+      transition: all 0.2s ease;
+    }
+    .admin-tab.active {
+      background: var(--grad-brand);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: var(--shadow-cyan);
+    }
+    .admin-panel-box {
+      display: none;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 26px;
+    }
+    .admin-panel-box.active {
+      display: block;
+    }
+    .prod-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: var(--bg-deep);
+      border: 1px solid var(--border-subtle);
+      padding: 12px 14px;
+      border-radius: var(--radius-sm);
+      margin-bottom: 10px;
+    }
+    .prod-row img {
+      width: 60px;
+      height: 60px;
+      border-radius: 8px;
+      object-fit: cover;
+      flex-shrink: 0;
+    }
+    .prod-row-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .prod-row-info h4 {
+      font-size: 0.96rem;
+      font-weight: 700;
+      margin-bottom: 2px;
+    }
+    .prod-row-info span {
+      font-size: 0.78rem;
+      color: var(--neon-cyan);
+    }
+    .prod-row-btns {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .btn-mini {
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-primary);
+    }
+    .btn-mini:hover {
+      border-color: var(--neon-cyan);
+      color: var(--neon-cyan);
+    }
+    .btn-mini-danger:hover {
+      border-color: var(--neon-magenta);
+      color: var(--neon-magenta);
+    }
+    .editor-drawer-card {
+      background: rgba(0, 240, 255, 0.05);
+      border: 1.5px solid var(--border-cyan);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      margin-bottom: 22px;
+      display: none;
+    }
+    .editor-drawer-card.open {
+      display: block;
+    }
+    .unsaved-pill {
+      display: none;
+      background: rgba(255, 230, 0, 0.16);
+      border: 1px solid var(--neon-yellow);
+      color: var(--neon-yellow);
+      padding: 4px 10px;
+      border-radius: var(--radius-full);
+      font-size: 0.76rem;
+      font-weight: 700;
+    }
+    .unsaved-pill.show {
+      display: inline-flex;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-orb orb-1"></div>
+  <div class="ambient-orb orb-2"></div>
+
+  <!-- ======================================================================
+       1. LOGIN SCREEN (PROTECTED BY AES-256-GCM PBKDF2)
+       ====================================================================== -->
+  <section class="login-screen" id="loginScreen">
+    <div class="login-card">
+      <div class="login-logo">
+        <img src="assets/logo-perfil.jpg" id="loginLogoImg" alt="Mania Arte em 3D" />
+      </div>
+      <span class="geek-tag" style="margin-bottom: 10px;">🔒 Acesso Restrito</span>
+      <h1 style="font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 6px;">Painel Administrativo</h1>
+      <p style="font-size: 0.86rem; color: var(--text-secondary); margin-bottom: 22px;">
+        Digite seu usuário e senha para gerenciar produtos, fotos e configurações da <strong>Mania Arte em 3D</strong>.
+      </p>
+
+      <form id="loginForm" style="display: flex; flex-direction: column; gap: 14px; text-align: left;">
+        <div class="form-group">
+          <label class="form-label" for="loginUser">Usuário</label>
+          <input type="text" id="loginUser" class="form-input" placeholder="Digite seu usuário" required autocomplete="username" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="loginPass">Senha</label>
+          <input type="password" id="loginPass" class="form-input" placeholder="••••••••••••" required autocomplete="current-password" />
+        </div>
+        <div id="loginErrorMsg" style="display: none; color: #ff5c8a; font-size: 0.82rem; font-weight: 700; text-align: center;"></div>
+        <button type="submit" class="btn-primary-geek" id="btnSubmitLogin" style="width: 100%; margin-top: 4px;">
+          🔓 Entrar no Painel
+        </button>
+      </form>
+
+      <div style="margin-top: 20px; padding-top: 14px; border-top: 1px solid var(--border-subtle);">
+        <a href="./" style="font-size: 0.82rem; color: var(--text-secondary);">← Voltar para a Loja Pública</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       2. UNLOCKED ADMIN DASHBOARD
+       ====================================================================== -->
+  <main class="admin-dashboard" id="adminDashboard">
+    <header class="admin-topbar">
+      <div class="container admin-topbar-inner">
+        <div class="brand-logo">
+          <div class="brand-avatar-wrap" style="width: 44px; height: 44px;">
+            <img src="assets/logo-perfil.jpg" id="topLogoImg" alt="Mania Arte em 3D" class="brand-avatar" />
+          </div>
+          <div class="brand-text">
+            <span class="brand-name" style="font-size: 1.05rem;">PAINEL ADMIN • MANIA ARTE EM 3D</span>
+            <span class="brand-handle" id="syncStatusText">Conectado à nuvem • Alterações atualizam o site para todos</span>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span class="unsaved-pill" id="unsavedIndicator">⚠️ Há alterações não publicadas</span>
+          <a href="./" target="_blank" class="btn-mini">🌐 Ver Site no Ar ↗</a>
+          <button type="button" class="btn-submit-wa" id="btnPublishAll" style="width: auto; padding: 11px 20px; font-size: 0.9rem;">
+            💾 Salvar e Publicar no Site
+          </button>
+          <button type="button" class="btn-mini btn-mini-danger" id="btnLogout">Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <div class="container">
+      <!-- Navigation Tabs -->
+      <div class="admin-nav-tabs" id="adminNavTabs">
+        <button type="button" class="admin-tab active" data-tab="tab-produtos">📦 Produtos do Catálogo (<span id="admProdCount">24</span>)</button>
+        <button type="button" class="admin-tab" data-tab="tab-feed">📷 Feed do Instagram (<span id="admFeedCount">30</span>)</button>
+        <button type="button" class="admin-tab" data-tab="tab-config">🏪 WhatsApp & Dados da Loja</button>
+        <button type="button" class="admin-tab" data-tab="tab-senha">🔑 Alterar Login e Senha</button>
+      </div>
+
+      <!-- TAB 1: PRODUTOS -->
+      <section class="admin-panel-box active" id="tab-produtos">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px;">
+          <div>
+            <h2 style="font-family: var(--font-display); font-size: 1.35rem;">Gerenciar Produtos do Catálogo</h2>
+            <p style="font-size: 0.86rem; color: var(--text-secondary);">Adicione novos produtos com foto, edite textos ou exclua itens. Depois clique em <strong>Salvar e Publicar no Site</strong> no topo.</p>
+          </div>
+          <button type="button" class="btn-primary-geek" id="btnOpenNewProd" style="padding: 11px 20px; font-size: 0.9rem;">
+            ➕ Cadastrar Novo Produto
+          </button>
+        </div>
+
+        <!-- Product Add/Edit Form -->
+        <div class="editor-drawer-card" id="prodEditorCard">
+          <h3 id="prodFormHeading" style="font-family: var(--font-display); color: var(--neon-cyan); margin-bottom: 14px;">➕ Novo Produto</h3>
+          <input type="hidden" id="prodEditIdx" value="-1" />
+
+          <div class="form-row-2" style="margin-bottom: 12px;">
+            <div class="form-group">
+              <label class="form-label">Nome do Produto *</label>
+              <input type="text" id="prodTitleInput" class="form-input" placeholder="Ex: Action Figure Goku Super Saiyajin 3D" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Universo Geek / Tag *</label>
+              <input type="text" id="prodUniverseInput" class="form-input" placeholder="Ex: 🐉 Dragon Ball Z" />
+            </div>
+          </div>
+
+          <div class="form-row-2" style="margin-bottom: 12px;">
+            <div class="form-group">
+              <label class="form-label">Categoria</label>
+              <select id="prodCategoryInput" class="form-select">
+                <option value="geek">⚔️ Colecionáveis Geek</option>
+                <option value="articulados">🦖 Articulados & Fidgets 3D</option>
+                <option value="utilidades">🔖 Marca-Páginas & Utilidades</option>
+                <option value="quadros-bottons">🖼️ Quadros & Bottons Geek</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Código do Post no Instagram (opcional)</label>
+              <input type="text" id="prodShortcodeInput" class="form-input" placeholder="Ex: DehVpG3Ndmx" />
+            </div>
+          </div>
+
+          <div class="form-row-2" style="margin-bottom: 12px;">
+            <div class="form-group">
+              <label class="form-label">Enviar Foto do Celular / Computador</label>
+              <input type="file" id="prodFileInput" accept="image/*" class="form-input" style="padding: 9px;" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Caminho ou Link da Imagem *</label>
+              <input type="text" id="prodImageInput" class="form-input" placeholder="assets/p_01_DehVpG3Ndmx.jpg" />
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label class="form-label">Descrição do Produto</label>
+            <textarea id="prodDescInput" class="form-textarea" style="min-height: 70px;" placeholder="Descreva os detalhes da peça..."></textarea>
+          </div>
+
+          <label style="display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.88rem; cursor: pointer; margin-bottom: 14px;">
+            <input type="checkbox" id="prodHotInput" checked />
+            🔥 Destacar produto com selo "Em Alta"
+          </label>
+
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn-submit-wa" id="btnConfirmProdForm" style="width: auto; padding: 10px 20px; font-size: 0.88rem;">
+              ✓ Confirmar Produto na Lista
+            </button>
+            <button type="button" class="btn-mini" id="btnCancelProdForm">Cancelar</button>
+          </div>
+        </div>
+
+        <div id="admProductsContainer"></div>
+      </section>
+
+      <!-- TAB 2: FEED DO INSTAGRAM -->
+      <section class="admin-panel-box" id="tab-feed">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 18px;">
+          <div>
+            <h2 style="font-family: var(--font-display); font-size: 1.35rem;">Gerenciar Feed do Instagram</h2>
+            <p style="font-size: 0.86rem; color: var(--text-secondary);">Adicione novas fotos ao feed do site ou remova publicações antigas.</p>
+          </div>
+          <button type="button" class="btn-primary-geek" id="btnOpenNewFeed" style="padding: 11px 20px; font-size: 0.9rem;">
+            ➕ Adicionar Post ao Feed
+          </button>
+        </div>
+
+        <div class="editor-drawer-card" id="feedEditorCard">
+          <h3 style="font-family: var(--font-display); color: var(--neon-cyan); margin-bottom: 14px;">➕ Novo Post no Feed</h3>
+          <div class="form-row-2" style="margin-bottom: 12px;">
+            <div class="form-group">
+              <label class="form-label">Enviar Foto do Celular / PC</label>
+              <input type="file" id="feedFileInput" accept="image/*" class="form-input" style="padding: 9px;" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Caminho ou Link da Imagem *</label>
+              <input type="text" id="feedImageInput" class="form-input" placeholder="assets/p_01_DehVpG3Ndmx.jpg" />
+            </div>
+          </div>
+          <div class="form-row-2" style="margin-bottom: 12px;">
+            <div class="form-group">
+              <label class="form-label">Tipo de Post</label>
+              <select id="feedTypeInput" class="form-select">
+                <option value="Foto">Foto</option>
+                <option value="Reel 🎥">Reel 🎥</option>
+                <option value="Carrossel">Carrossel</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Código do Post no Instagram (opcional)</label>
+              <input type="text" id="feedCodeInput" class="form-input" placeholder="Ex: DehVpG3Ndmx" />
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label">Legenda do Post</label>
+            <input type="text" id="feedCaptionInput" class="form-input" placeholder="Legenda da publicação..." />
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" class="btn-submit-wa" id="btnConfirmFeedForm" style="width: auto; padding: 10px 20px; font-size: 0.88rem;">
+              ✓ Confirmar no Feed
+            </button>
+            <button type="button" class="btn-mini" id="btnCancelFeedForm">Cancelar</button>
+          </div>
+        </div>
+
+        <div id="admFeedContainer"></div>
+      </section>
+
+      <!-- TAB 3: CONFIGURAÇÕES DA LOJA -->
+      <section class="admin-panel-box" id="tab-config">
+        <h2 style="font-family: var(--font-display); font-size: 1.35rem; margin-bottom: 6px;">WhatsApp & Dados da Loja</h2>
+        <p style="font-size: 0.86rem; color: var(--text-secondary); margin-bottom: 20px;">
+          Configure o número de WhatsApp que recebe os pedidos e as informações gerais do perfil.
+        </p>
+
+        <div class="form-row-2" style="margin-bottom: 14px;">
+          <div class="form-group">
+            <label class="form-label">Número do WhatsApp (com 55 + DDD, apenas números)</label>
+            <input type="text" id="admCfgWaNum" class="form-input" placeholder="558498995518" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nome da Loja</label>
+            <input type="text" id="admCfgNomeLoja" class="form-input" placeholder="Mania Arte em 3D" />
+          </div>
+        </div>
+
+        <div class="form-row-2" style="margin-bottom: 14px;">
+          <div class="form-group">
+            <label class="form-label">@ do Instagram</label>
+            <input type="text" id="admCfgIgHandle" class="form-input" placeholder="@maniaarteem3d" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cidade / UF</label>
+            <input type="text" id="admCfgCidade" class="form-input" placeholder="Natal/RN" />
+          </div>
+        </div>
+
+        <p style="font-size: 0.82rem; color: var(--neon-cyan); margin-top: 10px;">
+          Após alterar, clique no botão verde <strong>💾 Salvar e Publicar no Site</strong> no topo da página!
+        </p>
+      </section>
+
+      <!-- TAB 4: ALTERAR LOGIN E SENHA -->
+      <section class="admin-panel-box" id="tab-senha">
+        <h2 style="font-family: var(--font-display); font-size: 1.35rem; margin-bottom: 6px;">🔑 Alterar Usuário e Senha do Painel</h2>
+        <p style="font-size: 0.86rem; color: var(--text-secondary); margin-bottom: 20px;">
+          Você pode definir um novo usuário e uma nova senha para o painel administrativo. A credencial de publicação será re-criptografada com AES-256-GCM.
+        </p>
+
+        <div style="max-width: 460px; display: flex; flex-direction: column; gap: 14px;">
+          <div class="form-group">
+            <label class="form-label">Novo Usuário</label>
+            <input type="text" id="newAdminUser" class="form-input" placeholder="Ex: admin" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nova Senha</label>
+            <input type="password" id="newAdminPass" class="form-input" placeholder="Digite a nova senha" />
+          </div>
+          <button type="button" class="btn-primary-geek" id="btnChangePassword" style="width: auto; align-self: flex-start; padding: 12px 22px; font-size: 0.9rem;">
+            🔒 Salvar Novo Login e Senha
+          </button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div class="toast-notification" id="toastNotification"></div>
+
+  <script>
+    // Adjust relative asset paths if accessed via /admin/ subfolder
+    const IS_SUBFOLDER = window.location.pathname.includes("/admin/");
+    const BASE_PREFIX = IS_SUBFOLDER ? "../" : "";
+    if (IS_SUBFOLDER) {
+      document.getElementById("loginLogoImg").src = "../assets/logo-perfil.jpg";
+      document.getElementById("topLogoImg").src = "../assets/logo-perfil.jpg";
+    }
+
+    let UNLOCKED_CRED = null; // { token, repo, branch }
+    let SITE_DATA = {
+      config: {
+        nomeLoja: "Mania Arte em 3D",
+        instagramHandle: "@maniaarteem3d",
+        instagramUrl: "https://www.instagram.com/maniaarteem3d/",
+        whatsappNumero: "558498995518",
+        whatsappExibicao: "(84) 9899-5518",
+        cidade: "Natal/RN"
+      },
+      produtos: [],
+      feedInstagram: []
+    };
+    let PENDING_UPLOADS = []; // [{ path: 'assets/uploads/...', base64: '...' }]
+
+    const CAT_LABELS = {
+      geek: "Colecionáveis Geek",
+      articulados: "Articulados & Fidgets 3D",
+      utilidades: "Marca-Páginas & Utilidades",
+      "quadros-bottons": "Quadros & Bottons Geek"
+    };
+
+    function showToast(msg) {
+      const el = document.getElementById("toastNotification");
+      if (!el) return;
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(window._admToast);
+      window._admToast = setTimeout(() => el.classList.remove("show"), 4000);
+    }
+
+    function markUnsaved(flag = true) {
+      document.getElementById("unsavedIndicator")?.classList.toggle("show", flag);
+    }
+
+    function base64ToBytes(b64) {
+      const bin = atob(b64);
+      const arr = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      return arr;
+    }
+
+    function bytesToBase64(bytes) {
+      let bin = "";
+      const arr = new Uint8Array(bytes);
+      for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
+      return btoa(bin);
+    }
+
+    // Decrypt auth-vault.json using WebCrypto PBKDF2 + AES-256-GCM
+    async function unlockVault(username, password) {
+      const vaultUrls = [
+        "https://api.github.com/repos/willyelias/mania-arte-em-3d/contents/auth-vault.json?t=" + Date.now(),
+        BASE_PREFIX + "auth-vault.json?t=" + Date.now()
+      ];
+      let vault = null;
+      for (const u of vaultUrls) {
+        try {
+          const headers = u.includes("api.github.com") ? { Accept: "application/vnd.github.raw+json" } : {};
+          const r = await fetch(u, { headers, cache: "no-store" });
+          if (r.ok) {
+            vault = await r.json();
+            break;
+          }
+        } catch (_) {}
+      }
+      if (!vault) throw new Error("Cofre de autenticação não encontrado.");
+
+      const enc = new TextEncoder();
+      const salt = base64ToBytes(vault.salt);
+      const iv = base64ToBytes(vault.iv);
+      const cipher = base64ToBytes(vault.cipher);
+
+      const keyMaterial = await crypto.subtle.importKey(
+        "raw",
+        enc.encode(username.trim().toLowerCase() + ":" + password),
+        { name: "PBKDF2" },
+        false,
+        ["deriveKey"]
+      );
+      const key = await crypto.subtle.deriveKey(
+        { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+        keyMaterial,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["decrypt"]
+      );
+
+      const decryptedBuf = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, cipher);
+      return JSON.parse(new TextDecoder().decode(decryptedBuf));
+    }
+
+    // Load current dados-site.json from GitHub API
+    async function loadCurrentSiteData() {
+      const apiUrl = `https://api.github.com/repos/${UNLOCKED_CRED.repo}/contents/dados-site.json?t=${Date.now()}`;
+      const r = await fetch(apiUrl, {
+        headers: {
+          Authorization: `Bearer ${UNLOCKED_CRED.token}`,
+          Accept: "application/vnd.github.raw+json"
+        },
+        cache: "no-store"
+      });
+      if (r.ok) {
+        SITE_DATA = await r.json();
+      } else {
+        const localR = await fetch(BASE_PREFIX + "dados-site.json?t=" + Date.now());
+        if (localR.ok) SITE_DATA = await localR.json();
+      }
+      renderAdminUI();
+    }
+
+    function resolveImgSrc(src) {
+      if (!src) return BASE_PREFIX + "assets/logo-perfil.jpg";
+      if (src.startsWith("http") || src.startsWith("data:")) return src;
+      return BASE_PREFIX + src;
+    }
+
+    function renderAdminUI() {
+      document.getElementById("admProdCount").textContent = SITE_DATA.produtos.length;
+      document.getElementById("admFeedCount").textContent = SITE_DATA.feedInstagram.length;
+
+      document.getElementById("admCfgWaNum").value = SITE_DATA.config?.whatsappNumero || "558498995518";
+      document.getElementById("admCfgNomeLoja").value = SITE_DATA.config?.nomeLoja || "Mania Arte em 3D";
+      document.getElementById("admCfgIgHandle").value = SITE_DATA.config?.instagramHandle || "@maniaarteem3d";
+      document.getElementById("admCfgCidade").value = SITE_DATA.config?.cidade || "Natal/RN";
+
+      const prodContainer = document.getElementById("admProductsContainer");
+      prodContainer.innerHTML = SITE_DATA.produtos
+        .map(
+          (p, i) => `
+          <div class="prod-row">
+            <img src="${resolveImgSrc(p.image)}" alt="${p.title.replace(/"/g, "&quot;")}" />
+            <div class="prod-row-info">
+              <h4>${p.title} ${p.hot ? "🔥" : ""}</h4>
+              <span>${p.universe} • ${p.categoryLabel || CAT_LABELS[p.category]}</span>
+            </div>
+            <div class="prod-row-btns">
+              <button type="button" class="btn-mini" onclick="moveProd(${i}, -1)" title="Subir">↑</button>
+              <button type="button" class="btn-mini" onclick="moveProd(${i}, 1)" title="Descer">↓</button>
+              <button type="button" class="btn-mini" onclick="editProd(${i})">✏️ Editar</button>
+              <button type="button" class="btn-mini btn-mini-danger" onclick="removeProd(${i})">🗑️ Excluir</button>
+            </div>
+          </div>
+        `
+        )
+        .join("");
+
+      const feedContainer = document.getElementById("admFeedContainer");
+      feedContainer.innerHTML = SITE_DATA.feedInstagram
+        .map(
+          (f, i) => `
+          <div class="prod-row">
+            <img src="${resolveImgSrc(f.file)}" alt="Feed" />
+            <div class="prod-row-info">
+              <h4>${f.caption || "Sem legenda"}</h4>
+              <span>${f.type} • Código: ${f.code || "N/A"}</span>
+            </div>
+            <div class="prod-row-btns">
+              <button type="button" class="btn-mini btn-mini-danger" onclick="removeFeed(${i})">🗑️ Remover</button>
+            </div>
+          </div>
+        `
+        )
+        .join("");
+    }
+
+    window.moveProd = function (idx, dir) {
+      const target = idx + dir;
+      if (target < 0 || target >= SITE_DATA.produtos.length) return;
+      const temp = SITE_DATA.produtos[idx];
+      SITE_DATA.produtos[idx] = SITE_DATA.produtos[target];
+      SITE_DATA.produtos[target] = temp;
+      markUnsaved(true);
+      renderAdminUI();
+    };
+
+    window.editProd = function (idx) {
+      const p = SITE_DATA.produtos[idx];
+      if (!p) return;
+      document.getElementById("prodFormHeading").textContent = "✏️ Editando: " + p.title;
+      document.getElementById("prodEditIdx").value = idx;
+      document.getElementById("prodTitleInput").value = p.title;
+      document.getElementById("prodUniverseInput").value = p.universe;
+      document.getElementById("prodCategoryInput").value = p.category || "geek";
+      document.getElementById("prodShortcodeInput").value = p.shortcode || "";
+      document.getElementById("prodImageInput").value = p.image || "";
+      document.getElementById("prodDescInput").value = p.desc || "";
+      document.getElementById("prodHotInput").checked = !!p.hot;
+      const card = document.getElementById("prodEditorCard");
+      card.classList.add("open");
+      card.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    };
+
+    window.removeProd = function (idx) {
+      const p = SITE_DATA.produtos[idx];
+      if (!p) return;
+      SITE_DATA.produtos.splice(idx, 1);
+      markUnsaved(true);
+      renderAdminUI();
+      showToast("🗑️ Produto removido da lista. Clique em Salvar e Publicar no topo!");
+    };
+
+    window.removeFeed = function (idx) {
+      SITE_DATA.feedInstagram.splice(idx, 1);
+      markUnsaved(true);
+      renderAdminUI();
+      showToast("🗑️ Post removido do feed. Clique em Salvar e Publicar no topo!");
+    };
+
+    // Compress and stage image upload for GitHub assets/ folder
+    async function stageImageFileUpload(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = new Image();
+          img.onload = () => {
+            const maxDim = 900;
+            let w = img.naturalWidth;
+            let h = img.naturalHeight;
+            if (w > maxDim || h > maxDim) {
+              if (w > h) {
+                h = Math.round((h * maxDim) / w);
+                w = maxDim;
+              } else {
+                w = Math.round((w * maxDim) / h);
+                h = maxDim;
+              }
+            }
+            const canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, w, h);
+            const dataUrl = canvas.toDataURL("image/jpeg", 0.86);
+            const base64 = dataUrl.split(",")[1];
+            const safeName =
+              "p_upload_" +
+              Date.now() +
+              "_" +
+              file.name.replace(/[^a-zA-Z0-9]/g, "").slice(0, 12) +
+              ".jpg";
+            const relPath = "assets/" + safeName;
+            PENDING_UPLOADS.push({ path: relPath, base64, previewUrl: dataUrl });
+            resolve(relPath);
+          };
+          img.onerror = reject;
+          img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // Upload a file to GitHub repo via Contents API
+    async function putGithubFile(filePath, base64Content, commitMsg) {
+      const apiUrl = `https://api.github.com/repos/${UNLOCKED_CRED.repo}/contents/${filePath}`;
+      const headers = {
+        Authorization: `Bearer ${UNLOCKED_CRED.token}`,
+        Accept: "application/vnd.github+json"
+      };
+      let sha = undefined;
+      const getR = await fetch(apiUrl, { headers, cache: "no-store" });
+      if (getR.ok) {
+        const existing = await getR.json();
+        sha = existing.sha;
+      }
+      const putR = await fetch(apiUrl, {
+        method: "PUT",
+        headers: { ...headers, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: commitMsg,
+          content: base64Content,
+          branch: UNLOCKED_CRED.branch || "main",
+          sha
+        })
+      });
+      if (!putR.ok) {
+        const err = await putR.json();
+        throw new Error(err.message || "Erro ao gravar arquivo no servidor.");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      // Login Submit
+      document.getElementById("loginForm").addEventListener("submit", async e => {
+        e.preventDefault();
+        const user = document.getElementById("loginUser").value.trim();
+        const pass = document.getElementById("loginPass").value;
+        const btn = document.getElementById("btnSubmitLogin");
+        const errEl = document.getElementById("loginErrorMsg");
+
+        btn.disabled = true;
+        btn.textContent = "⏳ Verificando credenciais...";
+        errEl.style.display = "none";
+
+        try {
+          UNLOCKED_CRED = await unlockVault(user, pass);
+          await loadCurrentSiteData();
+          document.getElementById("loginScreen").style.display = "none";
+          document.getElementById("adminDashboard").classList.add("unlocked");
+          showToast("✅ Bem-vindo ao Painel Administrativo!");
+        } catch (_) {
+          errEl.textContent = "❌ Usuário ou senha incorretos!";
+          errEl.style.display = "block";
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "🔓 Entrar no Painel";
+        }
+      });
+
+      // Logout
+      document.getElementById("btnLogout").addEventListener("click", () => {
+        UNLOCKED_CRED = null;
+        window.location.reload();
+      });
+
+      // Tabs
+      document.querySelectorAll("#adminNavTabs .admin-tab").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll("#adminNavTabs .admin-tab").forEach(b => b.classList.remove("active"));
+          document.querySelectorAll(".admin-panel-box").forEach(p => p.classList.remove("active"));
+          btn.classList.add("active");
+          document.getElementById(btn.getAttribute("data-tab"))?.classList.add("active");
+        });
+      });
+
+      // Open New Product Form
+      document.getElementById("btnOpenNewProd").addEventListener("click", () => {
+        document.getElementById("prodFormHeading").textContent = "➕ Cadastrar Novo Produto";
+        document.getElementById("prodEditIdx").value = "-1";
+        document.getElementById("prodTitleInput").value = "";
+        document.getElementById("prodUniverseInput").value = "🎮 Cultura Geek";
+        document.getElementById("prodCategoryInput").value = "geek";
+        document.getElementById("prodShortcodeInput").value = "";
+        document.getElementById("prodImageInput").value = "";
+        document.getElementById("prodDescInput").value = "";
+        document.getElementById("prodHotInput").checked = true;
+        document.getElementById("prodEditorCard").classList.add("open");
+      });
+
+      document.getElementById("btnCancelProdForm").addEventListener("click", () => {
+        document.getElementById("prodEditorCard").classList.remove("open");
+      });
+
+      // Product File Upload
+      document.getElementById("prodFileInput").addEventListener("change", async e => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        showToast("⏳ Processando foto...");
+        const stagedPath = await stageImageFileUpload(file);
+        document.getElementById("prodImageInput").value = stagedPath;
+        showToast("📸 Foto pronta! Confirme o produto e depois clique em Salvar e Publicar.");
+      });
+
+      // Confirm Product Form
+      document.getElementById("btnConfirmProdForm").addEventListener("click", () => {
+        const idx = parseInt(document.getElementById("prodEditIdx").value, 10);
+        const title = document.getElementById("prodTitleInput").value.trim();
+        const universe = document.getElementById("prodUniverseInput").value.trim() || "🎮 Geek 3D";
+        const category = document.getElementById("prodCategoryInput").value;
+        const shortcode = document.getElementById("prodShortcodeInput").value.trim();
+        const image = document.getElementById("prodImageInput").value.trim() || "assets/logo-perfil.jpg";
+        const desc = document.getElementById("prodDescInput").value.trim();
+        const hot = document.getElementById("prodHotInput").checked;
+
+        if (!title) {
+          showToast("⚠️ Informe o nome do produto!");
+          return;
+        }
+
+        const item = {
+          id: idx >= 0 && SITE_DATA.produtos[idx] ? SITE_DATA.produtos[idx].id : "prod-" + Date.now(),
+          title,
+          universe,
+          category,
+          categoryLabel: CAT_LABELS[category] || "Colecionáveis Geek",
+          hot,
+          image,
+          shortcode,
+          desc
+        };
+
+        if (idx >= 0 && idx < SITE_DATA.produtos.length) {
+          SITE_DATA.produtos[idx] = item;
+        } else {
+          SITE_DATA.produtos.unshift(item);
+        }
+
+        document.getElementById("prodEditorCard").classList.remove("open");
+        markUnsaved(true);
+        renderAdminUI();
+        showToast("✅ Produto salvo na lista! Clique em 'Salvar e Publicar no Site' para colocar no ar.");
+      });
+
+      // Feed Form
+      document.getElementById("btnOpenNewFeed").addEventListener("click", () => {
+        document.getElementById("feedEditorCard").classList.add("open");
+      });
+      document.getElementById("btnCancelFeedForm").addEventListener("click", () => {
+        document.getElementById("feedEditorCard").classList.remove("open");
+      });
+      document.getElementById("feedFileInput").addEventListener("change", async e => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const stagedPath = await stageImageFileUpload(file);
+        document.getElementById("feedImageInput").value = stagedPath;
+        showToast("📸 Foto do feed carregada!");
+      });
+      document.getElementById("btnConfirmFeedForm").addEventListener("click", () => {
+        const file = document.getElementById("feedImageInput").value.trim();
+        const type = document.getElementById("feedTypeInput").value;
+        const code = document.getElementById("feedCodeInput").value.trim();
+        const caption = document.getElementById("feedCaptionInput").value.trim();
+        if (!file) {
+          showToast("⚠️ Selecione uma foto ou informe o link da imagem!");
+          return;
+        }
+        SITE_DATA.feedInstagram.unshift({ file, code, type, caption });
+        document.getElementById("feedEditorCard").classList.remove("open");
+        markUnsaved(true);
+        renderAdminUI();
+        showToast("✅ Post adicionado! Clique em 'Salvar e Publicar no Site'.");
+      });
+
+      // Publish All Changes to Cloud
+      document.getElementById("btnPublishAll").addEventListener("click", async () => {
+        const btn = document.getElementById("btnPublishAll");
+        const statusEl = document.getElementById("syncStatusText");
+        btn.disabled = true;
+        btn.textContent = "⏳ Publicando no site...";
+
+        try {
+          SITE_DATA.config = {
+            ...SITE_DATA.config,
+            whatsappNumero: document.getElementById("admCfgWaNum").value.trim() || "558498995518",
+            nomeLoja: document.getElementById("admCfgNomeLoja").value.trim() || "Mania Arte em 3D",
+            instagramHandle: document.getElementById("admCfgIgHandle").value.trim() || "@maniaarteem3d",
+            cidade: document.getElementById("admCfgCidade").value.trim() || "Natal/RN"
+          };
+
+          // 1. Upload any staged images first
+          for (const up of PENDING_UPLOADS) {
+            statusEl.textContent = `Enviando imagem ${up.path}...`;
+            await putGithubFile(up.path, up.base64, `feat(admin): upload de imagem ${up.path}`);
+          }
+          PENDING_UPLOADS = [];
+
+          // 2. Upload dados-site.json
+          statusEl.textContent = "Salvando catálogo e configurações...";
+          const jsonStr = JSON.stringify(SITE_DATA, null, 2);
+          const b64Json = btoa(unescape(encodeURIComponent(jsonStr)));
+          await putGithubFile("dados-site.json", b64Json, "chore(admin): atualizacao do catalogo e dados pelo painel admin");
+
+          markUnsaved(false);
+          statusEl.textContent = "✅ Tudo publicado e atualizado em tempo real!";
+          showToast("🚀 Alterações publicadas! Todos os clientes já veem o site atualizado.");
+        } catch (err) {
+          showToast("⚠️ Erro ao publicar: " + err.message);
+          statusEl.textContent = "❌ Erro ao publicar alterações.";
+        } finally {
+          btn.disabled = false;
+          btn.textContent = "💾 Salvar e Publicar no Site";
+        }
+      });
+
+      // Change Admin Password
+      document.getElementById("btnChangePassword").addEventListener("click", async () => {
+        const newUser = document.getElementById("newAdminUser").value.trim();
+        const newPass = document.getElementById("newAdminPass").value;
+        if (!newUser || !newPass || newPass.length < 4) {
+          showToast("⚠️ Informe um novo usuário e uma senha de pelo menos 4 caracteres.");
+          return;
+        }
+        try {
+          const enc = new TextEncoder();
+          const salt = crypto.getRandomValues(new Uint8Array(16));
+          const iv = crypto.getRandomValues(new Uint8Array(12));
+          const keyMaterial = await crypto.subtle.importKey(
+            "raw",
+            enc.encode(newUser.toLowerCase() + ":" + newPass),
+            { name: "PBKDF2" },
+            false,
+            ["deriveKey"]
+          );
+          const key = await crypto.subtle.deriveKey(
+            { name: "PBKDF2", salt, iterations: 100000, hash: "SHA-256" },
+            keyMaterial,
+            { name: "AES-GCM", length: 256 },
+            false,
+            ["encrypt"]
+          );
+          const cipherBuf = await crypto.subtle.encrypt(
+            { name: "AES-GCM", iv },
+            key,
+            enc.encode(JSON.stringify(UNLOCKED_CRED))
+          );
+          const newVault = {
+            v: 1,
+            hintUser: newUser,
+            salt: bytesToBase64(salt),
+            iv: bytesToBase64(iv),
+            cipher: bytesToBase64(cipherBuf)
+          };
+          const b64Vault = btoa(unescape(encodeURIComponent(JSON.stringify(newVault, null, 2))));
+          await putGithubFile("auth-vault.json", b64Vault, "security(admin): atualizacao de credenciais criptografadas");
+          showToast("🔒 Novo usuário e senha salvos com sucesso!");
+        } catch (err) {
+          showToast("⚠️ Erro ao salvar nova senha: " + err.message);
+        }
+      });
+    });
+  </script>
+</body>
+</html>

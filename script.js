@@ -3,10 +3,10 @@
    All actions redirect to WhatsApp: 8498995518 (558498995518)
    ========================================================================== */
 
-const WHATSAPP_NUMBER = "558498995518";
+let WHATSAPP_NUMBER = "558498995518";
 
 // 24 Real Products extracted from @maniaarteem3d Instagram
-const PRODUCTS = [
+let PRODUCTS = [
   {
     id: "trono-de-ferro-dragao",
     title: "Trono de Ferro com Dragão 3D",
@@ -274,7 +274,7 @@ const PRODUCTS = [
 ];
 
 // Real Instagram Feed Posts (@maniaarteem3d)
-const IG_FEED_POSTS = [
+let IG_FEED_POSTS = [
   { file: "assets/p_01_DehVpG3Ndmx.jpg", code: "DehVpG3Ndmx", type: "Foto", caption: "O fogo e o sangue ganharam vida em 3D! Trono de Ferro com Dragão 🐉⚔️🔥" },
   { file: "assets/p_03_DeISRb6NfEv.jpg", code: "DeISRb6NfEv", type: "Foto", caption: "Viciar as mãos nunca foi tão divertido! Infinity Cubes verde e preto 🧩✨" },
   { file: "assets/p_04_DeIQ--kmMN2.jpg", code: "DeIQ--kmMN2", type: "Carrossel", caption: "Cubo Anti-Estresse de 6 lados repleto de funções para foco e alívio da ansiedade!" },
@@ -315,6 +315,38 @@ let igVisibleCount = 12;
 let selectedCustomType = "Colecionável / Action Figure 3D";
 let uploadedImageFile = null;
 let uploadedImageDataUrl = null;
+
+// Load dynamic updates saved by the /admin panel
+async function loadDynamicSiteData() {
+  const urls = [
+    "https://api.github.com/repos/willyelias/mania-arte-em-3d/contents/dados-site.json?t=" + Date.now(),
+    "dados-site.json?t=" + Date.now()
+  ];
+  for (const url of urls) {
+    try {
+      const headers = url.includes("api.github.com")
+        ? { Accept: "application/vnd.github.raw+json" }
+        : {};
+      const resp = await fetch(url, { headers, cache: "no-store" });
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.config && data.config.whatsappNumero) {
+          WHATSAPP_NUMBER = String(data.config.whatsappNumero).replace(/\D+/g, "");
+        }
+        if (Array.isArray(data.produtos) && data.produtos.length > 0) {
+          PRODUCTS = data.produtos;
+        }
+        if (Array.isArray(data.feedInstagram) && data.feedInstagram.length > 0) {
+          IG_FEED_POSTS = data.feedInstagram;
+        }
+        updateCategoryCounts();
+        renderCatalog();
+        renderInstagramFeed();
+        return;
+      }
+    } catch (_) {}
+  }
+}
 
 // Helper: Sanitize text for WhatsApp URL (removes surrogate-pair emojis that turn into  on WhatsApp Web/Desktop redirect)
 function sanitizeForWhatsApp(str) {
@@ -371,7 +403,7 @@ function renderCatalog() {
       item.title.toLowerCase().includes(q) ||
       item.universe.toLowerCase().includes(q) ||
       item.desc.toLowerCase().includes(q) ||
-      item.categoryLabel.toLowerCase().includes(q);
+      (item.categoryLabel || "").toLowerCase().includes(q);
     return matchesCat && matchesSearch;
   });
 
@@ -389,6 +421,9 @@ function renderCatalog() {
   grid.innerHTML = filtered
     .map(item => {
       const inList = orderList.some(o => o.id === item.id);
+      const igLink = item.shortcode
+        ? `https://www.instagram.com/p/${item.shortcode}/`
+        : "https://www.instagram.com/maniaarteem3d/";
       return `
         <article class="product-card">
           <div class="product-media" onclick="openProductModal('${item.id}')">
@@ -398,7 +433,7 @@ function renderCatalog() {
               ${item.hot ? `<span class="badge-hot">🔥 Em Alta</span>` : ""}
             </div>
             <a
-              href="https://www.instagram.com/p/${item.shortcode}/"
+              href="${igLink}"
               target="_blank"
               rel="noopener noreferrer"
               class="product-ig-link"
@@ -418,7 +453,7 @@ function renderCatalog() {
               <button
                 type="button"
                 class="btn-order-card"
-                onclick="quickOrderProduct('${item.title.replace(/'/g, "\\'")}', '${item.shortcode}')"
+                onclick="quickOrderProduct('${item.title.replace(/'/g, "\\'")}', '${item.shortcode || ""}')"
               >
                 <span>💬 Pedir no WhatsApp</span>
               </button>
@@ -544,7 +579,9 @@ window.openProductModal = function (productId) {
   document.getElementById("modalProductUniverse").textContent = product.universe;
   document.getElementById("modalProductTitle").textContent = product.title;
   document.getElementById("modalProductDesc").textContent = product.desc;
-  document.getElementById("modalBtnIgLink").href = `https://www.instagram.com/p/${product.shortcode}/`;
+  document.getElementById("modalBtnIgLink").href = product.shortcode
+    ? `https://www.instagram.com/p/${product.shortcode}/`
+    : "https://www.instagram.com/maniaarteem3d/";
 
   const btnWa = document.getElementById("modalBtnWaDirect");
   btnWa.onclick = () => quickOrderProduct(product.title, product.shortcode);
@@ -739,7 +776,7 @@ function renderInstagramFeed() {
     .map(
       post => `
       <div class="ig-post-card">
-        <img src="${post.file}" alt="${post.caption.replace(/"/g, "&quot;")}" loading="lazy" />
+        <img src="${post.file}" alt="${(post.caption || "").replace(/"/g, "&quot;")}" loading="lazy" />
         <span class="ig-post-type-badge">${post.type}</span>
         <div class="ig-post-overlay">
           <p class="ig-overlay-caption">${post.caption}</p>
@@ -747,12 +784,12 @@ function renderInstagramFeed() {
             <button
               type="button"
               class="btn-ig-wa"
-              onclick="quickOrderProduct('${post.caption.slice(0, 48).replace(/'/g, "\\'")}...', '${post.code}')"
+              onclick="quickOrderProduct('${(post.caption || "").slice(0, 48).replace(/'/g, "\\'")}...', '${post.code || ""}')"
             >
               💬 Pedir Igual
             </button>
             <a
-              href="https://www.instagram.com/p/${post.code}/"
+              href="${post.code ? `https://www.instagram.com/p/${post.code}/` : "https://www.instagram.com/maniaarteem3d/"}"
               target="_blank"
               rel="noopener noreferrer"
               class="btn-ig-open"
@@ -784,6 +821,7 @@ document.addEventListener("DOMContentLoaded", () => {
   updateDrawerUI();
   setupCustomOrderBuilder();
   renderInstagramFeed();
+  loadDynamicSiteData();
 
   // Category Tabs click
   document.querySelectorAll("#categoryTabs .cat-tab").forEach(btn => {
@@ -819,7 +857,9 @@ document.addEventListener("DOMContentLoaded", () => {
     msg += `Montei minha *Lista de Encomenda* no site com os seguintes produtos:\n\n`;
     orderList.forEach(item => {
       msg += `• *${item.qty}x ${sanitizeForWhatsApp(item.title)}* (${sanitizeForWhatsApp(item.universe)})\n`;
-      msg += `  Ref: https://www.instagram.com/p/${item.shortcode}/\n`;
+      if (item.shortcode) {
+        msg += `  Ref: https://www.instagram.com/p/${item.shortcode}/\n`;
+      }
     });
     if (notes) {
       msg += `\n• *Observações / Preferência de cores:* ${sanitizeForWhatsApp(notes)}\n`;
